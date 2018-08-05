@@ -308,15 +308,15 @@ class BeginSource(BeginStatement):
                         blockdata={},
                         )
 
-    def tofortran(self, isfix=None):
-        if isfix:
-            tab = 'C'
-        else:
-            tab = self.get_indent_tab(isfix=isfix) + '!'
-        return tab + BeginStatement.tofortran(self, isfix=isfix)
+#    def tofortran(self, isfix=None):
+#        if isfix:
+#            tab = 'C'
+#        else:
+#            tab = self.get_indent_tab(isfix=isfix) + '!'
+#        return BeginStatement.tofortran(self, isfix=isfix)
 
     def tostr(self):
-        return self.blocktype.upper() + ' ' + self.name
+        return None
 
     def process_item(self):
         self.name = self.reader.name

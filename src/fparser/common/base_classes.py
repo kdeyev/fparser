@@ -780,8 +780,11 @@ class BeginStatement(Statement):
     def tofortran(self, isfix=None):
         construct_name = self.construct_name
         construct_name = construct_name + ': ' if construct_name else ''
-        lines = [self.get_indent_tab(isfix=isfix)
-                 + construct_name + self.tostr()]
+        self_str = self.tostr()
+        lines = []
+        if self_str != None:
+            lines.append(self.get_indent_tab(isfix=isfix)
+                    + construct_name + self.tostr())
         for c in self.content:
             lines.append(c.tofortran(isfix=isfix))
         return '\n'.join(lines)

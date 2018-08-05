@@ -1482,12 +1482,12 @@ class FortranStringReader(FortranReaderBase):
 
     '''
     def __init__(self, string, include_dirs=None, source_only=None,
-                 ignore_comments=True):
+                 ignore_comments=True, expand_includes=True):
         self.id = 'string-' + str(id(string))
         source = six.StringIO(string)
         mode = fparser.common.sourceinfo.get_source_info_str(string)
         FortranReaderBase.__init__(self, source, mode,
-                                   ignore_comments)
+                                   ignore_comments, expand_includes)
         if include_dirs is not None:
             self.include_dirs = include_dirs[:]
         if source_only is not None:

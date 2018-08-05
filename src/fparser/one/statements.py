@@ -2469,17 +2469,22 @@ class Comment(Statement):
     def process_item(self):
         assert self.item.comment.count('\n') <= 1, repr(self.item)
         stripped = self.item.comment.lstrip()
+        self.is_cont = len(self.item.comment) > 1 and self.item.comment[1]!=" "
         self.is_blank = not stripped
         self.content = stripped[1:] if stripped else ''
+        self.content = self.content.strip()
 
     def tofortran(self, isfix=None):
         if self.is_blank:
             return ''
         if isfix:
-            tab = 'C' + self.get_indent_tab(isfix=isfix)[1:]
+            tab = 'C'
+            if not self.is_cont:
+                tab = tab + self.get_indent_tab(isfix=isfix)[1:]
         else:
             tab = self.get_indent_tab(isfix=isfix) + '!'
-        return tab + self.content
+        tab = tab + self.content
+        return tab
 
     def analyze(self):
         return

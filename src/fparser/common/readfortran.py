@@ -155,6 +155,7 @@ __all__ = ['FortranFileReader',
            'Line',
            'SyntaxErrorLine',
            'Comment',
+           'Include',
            'MultiLine',
            'SyntaxErrorMultiLine']
 
@@ -411,6 +412,26 @@ class Comment(object):
         '''
         return ignore_comments
 
+class Include(object):
+    """ Holds Fortran Include.
+
+    Attributes
+    ----------
+    path : str
+      path string
+    reader : FortranReaderBase
+    """
+    def __init__(self, path, reader):
+        self.path = path
+        self.reader = reader
+
+    def __repr__(self):
+        return self.__class__.__name__+'(%r)' \
+               % (self.path)
+
+    def isempty(self, ignore_comments=False):
+        return False
+
 
 class MultiLine(object):
     """ Holds PYF file multiline.
@@ -485,7 +506,7 @@ class FortranReaderBase(object):
 
     """
 
-    def __init__(self, source, mode, ignore_comments):
+    def __init__(self, source, mode, ignore_comments, expand_includes=True):
         self.source = source
         self._format = mode
 
@@ -494,6 +515,8 @@ class FortranReaderBase(object):
         # This value for ignore_comments can be overridden by using the
         # ignore_comments optional argument to e.g. get_single_line()
         self._ignore_comments = ignore_comments
+
+        self._expand_includes = expand_includes
 
         self.filo_line = []  # used for un-consuming lines.
         self.fifo_item = []
@@ -589,7 +612,7 @@ class FortranReaderBase(object):
         First try getting the line from FILO line buffer.
 
         If FILO line buffer is empty then get the next line from
-        source. Tabs in source line are expanded, ending blank and new
+        source. Tabs in source line are expandd, ending blank and new
         line characters will be removed.  The source line will be
         added to ``source_lines`` list. If source line is empty then
         recursively get next non-empty line.
@@ -687,7 +710,7 @@ class FortranReaderBase(object):
     def __next__(self):
         return self.next()
 
-    def next(self, ignore_comments=None):
+    def next(self, ignore_comments=None, expand_includes=None):
         """ Return the next Fortran code item.
 
         Include statements are realized.
@@ -704,6 +727,8 @@ class FortranReaderBase(object):
         """
         if ignore_comments is None:
             ignore_comments = self._ignore_comments
+        if expand_includes is None:
+            expand_includes = self._expand_includes  
         try:
             if self.reader is not None:
                 # inside INCLUDE statement
@@ -717,6 +742,10 @@ class FortranReaderBase(object):
                 # to enter to included file.
                 reader = item.reader
                 filename = item.line.strip()[7:].lstrip()[1:-1]
+
+                if expand_includes == False:
+                    return Include(filename,self)
+
                 include_dirs = self.include_dirs[:]
                 path = filename
                 for incl_dir in include_dirs:
@@ -1395,7 +1424,7 @@ class FortranFileReader(FortranReaderBase):
 
     '''
     def __init__(self, file_candidate, include_dirs=None, source_only=None,
-                 ignore_comments=True):
+                 ignore_comments=True, expand_includes=True):
         if isinstance(file_candidate, six.string_types):
             self.id = file_candidate
             self.file = open(file_candidate, 'r')
@@ -1412,7 +1441,7 @@ class FortranFileReader(FortranReaderBase):
             raise ValueError(message)
         mode = fparser.common.sourceinfo.get_source_info(file_candidate)
 
-        FortranReaderBase.__init__(self, self.file, mode, ignore_comments)
+        FortranReaderBase.__init__(self, self.file, mode, ignore_comments, expand_includes)
 
         if include_dirs is None:
             self.include_dirs.insert(0, os.path.dirname(self.id))

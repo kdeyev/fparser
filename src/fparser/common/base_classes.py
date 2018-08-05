@@ -74,7 +74,7 @@ import copy
 import logging
 
 from six import with_metaclass
-from fparser.common.readfortran import Line, Comment
+from fparser.common.readfortran import Line, Comment, Include
 from fparser.common.utils import split_comma,       \
                                  specs_split_comma, \
                                  is_int_literal_constant
@@ -828,6 +828,8 @@ class BeginStatement(Statement):
             elif isinstance(item, Comment):
                 # TODO: FIX ME, Comment content is a string
                 self.content.append(classes.Comment(self, item))
+            elif isinstance(item, Include):
+                self.content.append(classes.Include(self, item))
             else:
                 raise NotImplementedError(repr(item))
             item = self.get_item()

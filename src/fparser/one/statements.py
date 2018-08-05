@@ -98,7 +98,7 @@ __all__ = ['GeneralAssignment',
            'Asynchronous', 'Bind', 'Else', 'ElseIf', 'Case', 'TypeIs',
            'ClassIs', 'WhereStmt', 'ElseWhere', 'Enumerator', 'FortranName',
            'Threadsafe', 'Depend', 'Check', 'CallStatement',
-           'CallProtoArgument', 'Pause', 'Comment']
+           'CallProtoArgument', 'Pause', 'Comment', 'Include']
 
 
 class StatementWithNamelist(Statement):
@@ -2480,6 +2480,28 @@ class Comment(Statement):
         else:
             tab = self.get_indent_tab(isfix=isfix) + '!'
         return tab + self.content
+
+    def analyze(self):
+        return
+
+class Include(Statement):
+    """
+
+    Attributes
+    ----------
+    content : str
+      Content of the comment.
+    is_blank : bool
+      When True then Comment represents blank line.
+    """
+    match = lambda s: True
+
+    def process_item(self):
+        pass
+
+    def tofortran(self, isfix=None):
+        tab = self.get_indent_tab(isfix=isfix) + "INCLUDE " + self.item.path
+        return tab
 
     def analyze(self):
         return

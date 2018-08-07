@@ -786,7 +786,10 @@ class BeginStatement(Statement):
             lines.append(self.get_indent_tab(isfix=isfix)
                     + construct_name + self.tostr())
         for c in self.content:
-            lines.append(c.tofortran(isfix=isfix))
+            line = c.tofortran(isfix=isfix)
+            if hasattr(c, 'attached_comment') and c.attached_comment != None:
+                line = line + " " + c.attached_comment.tofortran(isfix=isfix)
+            lines.append(line)
         return '\n'.join(lines)
 
     def torepr(self, depth=-1, incrtab=''):
@@ -835,6 +838,8 @@ class BeginStatement(Statement):
                 self.content.append(classes.Include(self, item))
             else:
                 raise NotImplementedError(repr(item))
+            if hasattr(item, 'attached_comment') and item.attached_comment != None:
+                self.content[-1].attached_comment = classes.Comment(self, item.attached_comment)
             item = self.get_item()
 
         if not end_flag:

@@ -237,7 +237,7 @@ class Line(object):
     f2py_strmap_findall = re.compile(r'(_F2PY_STRING_CONSTANT_\d+_'
                                      + r'|F2PY_EXPR_TUPLE_\d+)').findall
 
-    def __init__(self, line, linenospan, label, name, reader):
+    def __init__(self, line, linenospan, label, name, reader, attached_comment):
         self.line = line.strip()
         if not self.line:
             raise FortranReaderError("Got empty line: '{0}'. linenospan={1}, "
@@ -252,6 +252,7 @@ class Line(object):
         self.strline = None
         self.is_f2py_directive = linenospan[0] in reader.f2py_comment_lines
         self.parse_cache = {}
+        self.attached_comment = attached_comment
 
     def has_map(self):
         '''
@@ -284,7 +285,7 @@ class Line(object):
             line = self.line
         if apply_map:
             line = self.apply_map(line)
-        return Line(line, self.span, self.label, self.name, self.reader)
+        return Line(line, self.span, self.label, self.name, self.reader, self.attached_comment)
 
     def clone(self, line):
         '''
@@ -449,12 +450,13 @@ class MultiLine(object):
       starting and ending line numbers
     reader : FortranReaderBase
     """
-    def __init__(self, prefix, block, suffix, linenospan, reader):
+    def __init__(self, prefix, block, suffix, linenospan, reader, attached_comment):
         self.prefix = prefix
         self.block = block
         self.suffix = suffix
         self.span = linenospan
         self.reader = reader
+        self.attached_comment=attached_comment
 
     def __repr__(self):
         string = '{cls}({prefix!r},{block},{suffix!r},{span})'
@@ -838,16 +840,17 @@ class FortranReaderBase(object):
                   endlineno,
                   label,
                   name,
-                  errmessage=None):
+                  errmessage=None,
+                  attached_comment=None):
         """ Construct Line item.
         """
         if errmessage is None:
-            return Line(line, (startlineno, endlineno), label, name, self)
+            return Line(line, (startlineno, endlineno), label, name, self, attached_comment)
         return SyntaxErrorLine(line, (startlineno, endlineno),
                                label, name, self, errmessage)
 
     def multiline_item(self, prefix, lines, suffix,
-                       startlineno, endlineno, errmessage=None):
+                       startlineno, endlineno, errmessage=None, attached_comment=None):
         """ Construct MultiLine item.
         """
         if errmessage is None:
@@ -855,7 +858,7 @@ class FortranReaderBase(object):
                              lines,
                              suffix,
                              (startlineno, endlineno),
-                             self)
+                             self, attached_comment)
         return SyntaxErrorMultiLine(prefix,
                                     lines,
                                     suffix,
@@ -1119,11 +1122,17 @@ class FortranReaderBase(object):
                 logging.getLogger(__name__).warning(message)
             # XXX: should we do line.replace('\\'+mlstr[0],mlstr[0])
             #      for line in multilines?
+
+            attached_comment = None
+            if had_comment:
+                attached_comment = self.get_item()
+
             return self.multiline_item(prefix,
                                        multilines,
                                        suffix,
                                        startlineno,
-                                       self.linecount)
+                                       self.linecount,
+                                       attached_comment=attached_comment)
 
     # The main method of interpreting raw source lines within
     # the following contexts: f77, fixed, free, pyf.
@@ -1297,11 +1306,17 @@ class FortranReaderBase(object):
                                                               startlineno + i,
                                                               location)
                         logging.getLogger(__name__).warning(message)
+
+            attached_comment = None
+            if have_comment:
+                attached_comment = self.get_item()
+
             return self.line_item(''.join(lines),
                                   startlineno,
                                   endlineno,
                                   label,
-                                  name)
+                                  name,
+                                  attached_comment=attached_comment)
 
         # line is free format or fixed format with f2py directive (that
         # will be interpretted as free format line).
@@ -1391,11 +1406,16 @@ class FortranReaderBase(object):
             logging.getLogger(__name__).error(message)
         line_content = ''.join(lines).strip()
         if line_content:
+            attached_comment = None
+            if have_comment:
+                attached_comment = self.get_item()
+
             return self.line_item(line_content,
                                   startlineno,
                                   endlineno,
                                   label,
-                                  name)
+                                  name,
+                                  attached_comment=attached_comment)
         if label is not None:
             message = 'Label must follow nonblank character (F2008:3.2.5_2)'
             self.warning(message)

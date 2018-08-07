@@ -663,6 +663,33 @@ class Statement(object, with_metaclass(classes)):
     def __str__(self):
         return self.tofortran()
 
+
+    def asfix120(self, max_len = 120):
+        lines = []
+        for line in self.tofortran(isfix=True).split('\n'):
+            if len(line) > max_len and line[0] == ' ':
+                tokens = line.split(',')
+                
+                assert(len(tokens) > 1)
+                for t in tokens:
+                    assert (len(t) < max_len -2)
+
+                line = tokens[0]
+                align_pos = len(line) - len(line.lstrip())
+
+                for t in tokens[1:]:
+                    new_l = line + "," + t
+                    if len(new_l) > max_len-1:
+                        lines.append(line + "," + "\n")
+                        line = "     *" + " " * (align_pos-6) + t
+                    else:
+                        line = new_l
+                lines.append(line + "\n")
+            else:
+                lines.append(line+'\n')
+        return ''.join(lines)
+
+
     def asfix(self):
         lines = []
         for line in self.tofortran(isfix=True).split('\n'):
@@ -787,8 +814,8 @@ class BeginStatement(Statement):
                     + construct_name + self.tostr())
         for c in self.content:
             line = c.tofortran(isfix=isfix)
-            if hasattr(c, 'attached_comment') and c.attached_comment != None:
-                line = line + " " + c.attached_comment.tofortran(isfix=isfix)
+            if hasattr(c, 'inline_comment') and c.inline_comment != None:
+                line = line + " " + c.inline_comment.tofortran(isfix=False) # inline_comment is never fixed
             lines.append(line)
         return '\n'.join(lines)
 
@@ -838,8 +865,8 @@ class BeginStatement(Statement):
                 self.content.append(classes.Include(self, item))
             else:
                 raise NotImplementedError(repr(item))
-            if hasattr(item, 'attached_comment') and item.attached_comment != None:
-                self.content[-1].attached_comment = classes.Comment(self, item.attached_comment)
+            if hasattr(item, 'inline_comment') and item.inline_comment != None:
+                self.content[-1].inline_comment = classes.Comment(self, item.inline_comment)
             item = self.get_item()
 
         if not end_flag:

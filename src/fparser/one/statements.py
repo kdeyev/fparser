@@ -2505,7 +2505,7 @@ class Include(Statement):
         pass
 
     def tofortran(self, isfix=None):
-        tab = self.get_indent_tab(isfix=isfix) + "INCLUDE " + self.item.path
+        tab = self.get_indent_tab(isfix=isfix) + "INCLUDE '" + self.item.path + "'"
         return tab
 
     def analyze(self):

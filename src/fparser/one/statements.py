@@ -2466,6 +2466,8 @@ class Comment(Statement):
     """
     match = lambda s: True
 
+    PRESERVE_COMMENTS = True
+
     def process_item(self):
         assert self.item.comment.count('\n') <= 1, repr(self.item)
         stripped = self.item.comment.lstrip()
@@ -2473,11 +2475,15 @@ class Comment(Statement):
         self.is_blank = not stripped
         self.content = stripped[1:] if stripped else ''
         self.content = self.content.strip()
+        if Comment.PRESERVE_COMMENTS:
+            self.orig_content = self.item.comment
 
     def tofortran(self, isfix=None):
         if self.is_blank:
             return ''
         if isfix:
+            if Comment.PRESERVE_COMMENTS:
+                return self.orig_content
             tab = 'C'
             if not self.is_cont:
                 tab = tab + self.get_indent_tab(isfix=isfix)[1:]

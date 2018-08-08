@@ -1171,7 +1171,7 @@ class Do(BeginStatement):
 
     def process_item(self):
         item = self.item
-        line = item.get_line()
+        line = item.get_line(True)
         m = self.item_re(line)
         label = m.group('label').strip() or None
         if label:

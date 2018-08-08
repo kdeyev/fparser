@@ -714,7 +714,7 @@ class SubProgramStatement(BeginStatement, ProgramBlock,
             suf += ' RESULT ( %s )' % (self.result)
         if self.bind:
             suf += ' BIND ( %s )' % (', '.join(self.bind))
-        return '%s %s(%s)%s' % (s, self.name, ', '.join(self.args), suf)
+        return '%s %s (%s)%s' % (s, self.name, ', '.join(self.args), suf)
 
     def get_classes(self):
         return f2py_stmt + specification_part + execution_part \

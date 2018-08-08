@@ -653,7 +653,7 @@ class Statement(object, with_metaclass(classes)):
             return tab
         s = str(label)
         if isfix:
-            s = ' '+s
+            s = ' '*(5-len(str(label))) +s
         tab = tab[len(s):]
         if not tab:
             tab = ' '
@@ -663,28 +663,41 @@ class Statement(object, with_metaclass(classes)):
     def __str__(self):
         return self.tofortran()
 
+    def fix120_split(self, max_len, line, lines, separs):
+        align_pos = len(line) - len(line.lstrip())
+
+        for separ in separs:
+            lines_local = []
+            tokens = line.split(separ)
+            if separ == None:
+                separ = ' '
+                    
+            if (len(tokens) <= 1):
+                continue # next separator
+            for t in tokens:
+                assert (len(t) < max_len -2)
+
+            line_local = tokens[0].lstrip()
+            line_local = " " * align_pos + line_local
+
+            for t in tokens[1:]:
+                new_l = line_local + separ + t
+                if len(new_l) > max_len-1:
+                    lines_local.append(line_local + separ + "\n")
+                    line_local = "     *" + " " * (align_pos-6) + t
+                else:
+                    line_local = new_l
+            lines_local.append(line_local + "\n")
+
+            for line_local in lines_local:
+                lines.append(line_local)
+            return
 
     def asfix120(self, max_len = 120):
         lines = []
         for line in self.tofortran(isfix=True).split('\n'):
             if len(line) > max_len and line[0] == ' ':
-                tokens = line.split(',')
-                
-                assert(len(tokens) > 1)
-                for t in tokens:
-                    assert (len(t) < max_len -2)
-
-                line = tokens[0]
-                align_pos = len(line) - len(line.lstrip())
-
-                for t in tokens[1:]:
-                    new_l = line + "," + t
-                    if len(new_l) > max_len-1:
-                        lines.append(line + "," + "\n")
-                        line = "     *" + " " * (align_pos-6) + t
-                    else:
-                        line = new_l
-                lines.append(line + "\n")
+                self.fix120_split(max_len, line, lines, [',', None, ".EQ.", ".AND.", ".OR."])
             else:
                 lines.append(line+'\n')
         return ''.join(lines)

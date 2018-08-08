@@ -173,7 +173,7 @@ class GeneralAssignment(Statement):
             if i == -1:
                 break
             v = v[i+1:]
-            if v.startswith('(') or v.startswith(r'%'):
+            if v.startswith('(') or v.startswith(r'%') or v.startswith(r'.'):
                 continue
             if v:
                 self.isvalid = False
@@ -297,7 +297,7 @@ class Call(Statement):
         ''' Returns the Fortran representation of this object as a string '''
         txt = self.get_indent_tab(isfix=isfix) + 'CALL ' + str(self.designator)
         if self.items:
-            txt += '(' + ', '.join(map(str, self.items)) + ')'
+            txt += ' (' + ', '.join(map(str, self.items)) + ')'
         return txt
 
     def analyze(self):
@@ -2471,8 +2471,12 @@ class Comment(Statement):
     def process_item(self):
         assert self.item.comment.count('\n') <= 1, repr(self.item)
         stripped = self.item.comment.lstrip()
+        align = len(self.item.comment)-len(stripped)
         self.is_cont = len(self.item.comment) > 1 and self.item.comment[1]!=" "
         self.is_blank = not stripped
+
+        "            ! Inline comm"
+        self.inline = not self.is_blank and stripped[0] == '!' and align > (6-1)
         self.content = stripped[1:] if stripped else ''
         self.content = self.content.strip()
         if Comment.PRESERVE_COMMENTS:
@@ -2481,14 +2485,22 @@ class Comment(Statement):
     def tofortran(self, isfix=None):
         if self.is_blank:
             return ''
-        if isfix:
-            if Comment.PRESERVE_COMMENTS:
-                return self.orig_content
+        
+        if not self.inline and Comment.PRESERVE_COMMENTS:
+            return self.orig_content
+        
+        if self.inline:
+            tab = self.get_indent_tab(isfix=isfix) + '!'
+            tab = tab + self.content
+            return tab
+            
+        if isfix or not self.inline:
             tab = 'C'
             if not self.is_cont:
                 tab = tab + self.get_indent_tab(isfix=isfix)[1:]
         else:
             tab = self.get_indent_tab(isfix=isfix) + '!'
+
         tab = tab + self.content
         return tab
 

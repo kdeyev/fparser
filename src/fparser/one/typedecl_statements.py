@@ -335,7 +335,7 @@ class TypeDeclarationStatement(Statement):
         tab = self.get_indent_tab(isfix=isfix)
         s = self.tostr()
         if self.attrspec:
-            s += ', ' + ', '.join(self.attrspec)
+            s += ', ' + ', '.join(self.attrspec).upper()
         # If we were to change fparser so that it always produces the
         # '::' separator then we'd simply comment-out the if below.
         if self.attrspec or '=' in str(self.entity_decls):

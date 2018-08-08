@@ -869,8 +869,8 @@ class CallBase(Base):
 
     def tostr(self):
         if self.items[1] is None:
-            return '%s()' % (self.items[0])
-        return '%s(%s)' % (self.items[0], self.items[1])
+            return '%s ()' % (self.items[0])
+        return '%s (%s)' % (self.items[0], self.items[1])
 
 
 class CALLBase(CallBase):

@@ -4358,8 +4358,12 @@ class Data_Ref(SequenceBase):  # R612
     subclass_names = ['Part_Ref']
     use_names = []
 
+    def tostr(self):
+        s = self.separator
+        return s.join(map(str, self.items))
+
     def match(string):
-        return SequenceBase.match(r'%', Part_Ref, string)
+        return SequenceBase.match(r'%', Part_Ref, string) or SequenceBase.match(r'.', Part_Ref, string)
     match = staticmethod(match)
 
 

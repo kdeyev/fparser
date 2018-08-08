@@ -285,7 +285,7 @@ class Line(object):
             line = self.line
         if apply_map:
             line = self.apply_map(line)
-        return Line(line, self.span, self.label, self.name, self.reader, self.inline_comment)
+        return Line(line, self.span, None, self.name, self.reader, self.inline_comment)
 
     def clone(self, line):
         '''

@@ -644,10 +644,10 @@ class Statement(object, with_metaclass(classes)):
             tab = ''
         p = self.parent
         while isinstance(p, Statement):
-            tab += '  '
+            tab += ' '*4
             p = p.parent
         if deindent:
-            tab = tab[:-2]
+            tab = tab[:-4]
         label = getattr(self.item, 'label', None)
         if label is None:
             return tab
@@ -826,13 +826,13 @@ class BeginStatement(Statement):
             line = self.get_indent_tab(isfix=isfix) + construct_name + self.tostr()
 
             if hasattr(self, 'inline_comment') and self.inline_comment != None:
-                line = line + " " + self.inline_comment.tofortran(isfix=False) # inline_comment is cannot be "fixed"
+                line = line + " " + self.inline_comment.tofortran() 
                 self.inline_comment = None
             lines.append(line)
         for c in self.content:
             line = c.tofortran(isfix=isfix)
             if hasattr(c, 'inline_comment') and c.inline_comment != None:
-                line = line + " " + c.inline_comment.tofortran(isfix=False) # inline_comment cannot be "fixed"
+                line = line + " " + c.inline_comment.tofortran()
             lines.append(line)
         return '\n'.join(lines)
 

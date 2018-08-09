@@ -1134,6 +1134,31 @@ class FortranReaderBase(object):
                                        self.linecount,
                                        inline_comment=inline_comment)
 
+    def manage_inline_comments (self, inline_comment_count, dont_use_concat=True):
+        # if there was multiple inline comments we have to utilize all of them
+        if inline_comment_count > 1:
+            inline_comment = None
+            # concatenate 
+            while inline_comment_count:
+                comment = self.get_item()
+                assert (isinstance(comment, Comment))
+                inline_comment_count = inline_comment_count - 1
+                if inline_comment == None:
+                    inline_comment = comment
+                else:
+                    inline_comment.comment = inline_comment.comment + comment.comment
+
+            # Most likely you cannot use this concatenated comment - so drop it
+            if dont_use_concat:
+                return None
+            else: 
+                return inline_comment
+        elif inline_comment_count == 1: # if there was only one inline comment we can use is as inline
+            comment = self.get_item()
+            assert (isinstance(comment, Comment))
+            return comment
+        return None
+
     # The main method of interpreting raw source lines within
     # the following contexts: f77, fixed, free, pyf.
 
@@ -1154,7 +1179,7 @@ class FortranReaderBase(object):
         line = self.handle_cf2py_start(line)
         is_f2py_directive = startlineno in self.f2py_comment_lines
         isstrict = self._format.is_strict
-        have_comment = False
+        inline_comment_count = 0
         label = None
         name = None
 
@@ -1257,7 +1282,8 @@ class FortranReaderBase(object):
             # handle inline comment
             newline, qc, had_comment = handle_inline_comment(line[6:],
                                                              startlineno)
-            have_comment |= had_comment
+            if had_comment:
+                inline_comment_count = inline_comment_count + 1
             lines = [newline]
             next_line = self.get_next_line()
 
@@ -1281,7 +1307,8 @@ class FortranReaderBase(object):
                         = self.handle_inline_comment(line2[6:],
                                                      self.linecount,
                                                      qc)
-                    have_comment |= had_comment
+                    if had_comment:
+                        inline_comment_count = inline_comment_count + 1
                     lines.append(newline)
                     endlineno = self.linecount
                 next_line = self.get_next_line()
@@ -1307,9 +1334,7 @@ class FortranReaderBase(object):
                                                               location)
                         logging.getLogger(__name__).warning(message)
 
-            inline_comment = None
-            if have_comment:
-                inline_comment = self.get_item()
+            inline_comment = self.manage_inline_comments(inline_comment_count)
 
             return self.line_item(''.join(lines),
                                   startlineno,
@@ -1333,7 +1358,8 @@ class FortranReaderBase(object):
                 line, qc, had_comment \
                     = handle_inline_comment(line[start_index:],
                                             self.linecount, qc)
-                have_comment |= had_comment
+                if had_comment:
+                    inline_comment_count = inline_comment_count + 1
                 is_f2py_directive = self.linecount in self.f2py_comment_lines
             else:
                 # free format
@@ -1344,7 +1370,7 @@ class FortranReaderBase(object):
                         put_item(self.comment_item(line_lstrip,
                                                    self.linecount,
                                                    self.linecount))
-                        have_comment = True
+                        inline_comment_count = inline_comment_count + 1              
                         line = get_single_line()
                         continue
                     elif line_lstrip == "":
@@ -1366,7 +1392,8 @@ class FortranReaderBase(object):
                 line, qc, had_comment = handle_inline_comment(line,
                                                               self.linecount,
                                                               qc)
-                have_comment |= had_comment
+                if had_comment:
+                    inline_comment_count = inline_comment_count + 1
                 is_f2py_directive = self.linecount in self.f2py_comment_lines
 
             i = line.rfind('&')
@@ -1406,9 +1433,7 @@ class FortranReaderBase(object):
             logging.getLogger(__name__).error(message)
         line_content = ''.join(lines).strip()
         if line_content:
-            inline_comment = None
-            if have_comment:
-                inline_comment = self.get_item()
+            inline_comment = self.manage_inline_comments(inline_comment_count)
 
             return self.line_item(line_content,
                                   startlineno,
@@ -1421,7 +1446,9 @@ class FortranReaderBase(object):
             self.warning(message)
         if name is not None:
             self.error('No construct following construct-name.')
-        if have_comment:
+
+        assert (inline_comment_count <= 1)
+        if inline_comment_count==1:
             return next(self)
         return self.comment_item('', startlineno, endlineno)
 

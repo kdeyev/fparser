@@ -674,8 +674,14 @@ class Statement(object, with_metaclass(classes)):
                     
             if (len(tokens) <= 1):
                 continue # next separator
+            cont = False
             for t in tokens:
-                assert (len(t) < max_len -2)
+                if len(t) >= max_len -2:
+                    cont = True
+                    break
+
+            if cont:
+                continue
 
             line_local = tokens[0].lstrip()
             line_local = " " * align_pos + line_local
@@ -693,11 +699,14 @@ class Statement(object, with_metaclass(classes)):
                 lines.append(line_local)
             return
 
+        print "Very long line", line
+        assert (False)
+
     def asfix120(self, max_len = 120):
         lines = []
         for line in self.tofortran(isfix=True).split('\n'):
             if len(line) > max_len and line[0] == ' ':
-                self.fix120_split(max_len, line, lines, [',', None, ".EQ.", ".AND.", ".OR."])
+                self.fix120_split(max_len, line, lines, [',', None, "+", "-","*","/",".EQ.", ".AND.", ".OR."])
             else:
                 lines.append(line+'\n')
         return ''.join(lines)

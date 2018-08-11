@@ -999,7 +999,7 @@ class Where(BeginStatement):
         return 'WHERE ( %s )' % (self.expr)
 
     def process_item(self):
-        self.expr = self.item.get_line()[5:].lstrip()[1:-1].strip()
+        self.expr =  self.item.apply_map(self.item.get_line()[5:].lstrip()[1:-1].strip())
         self.construct_name = self.item.name
         return BeginStatement.process_item(self)
 

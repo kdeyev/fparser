@@ -243,7 +243,7 @@ def get_source_info_str(source):
         if line and line[0] != '!':
             line_tally -= 1
             if line[0] != '\t' and _FREE_FORMAT_START(line[:5]) \
-               or line[-1:] == '&':
+               or (line[-1:] == '&' and line[0]!= 'C'):
                 is_free = True
                 break
 

@@ -2249,7 +2249,7 @@ class Where(Statement):
         line = self.item.get_line()[5:].lstrip()
         i = line.index(')')
         self.expr = self.item.apply_map(line[1:i].strip())
-        line = line[i+1:].lstrip()
+        line = self.item.apply_map(line[i+1:].lstrip())
         newitem = self.item.copy(line)
         cls = Assignment
         if cls.match(line):
@@ -2471,18 +2471,18 @@ class Comment(Statement):
     def process_item(self):
         assert self.item.comment.count('\n') <= 1, repr(self.item)
         stripped = self.item.comment.lstrip()
-        align = len(self.item.comment)-len(stripped)
-        self.is_cont = len(self.item.comment) > 1 and self.item.comment[1]!=" "
+        #align = len(self.item.comment)-len(stripped)
         self.is_blank = not stripped
 
         "            ! Inline comm"
-        self.inline = not self.is_blank and stripped[0] == '!' and align > (6-1)
+        self.fix = len(self.item.comment) and self.item.comment[0] != ' '
+        self.inline = not self.fix and not self.is_blank and stripped[0] == '!'
         self.content = stripped[1:] if stripped else ''
         self.content = self.content.strip()
         if Comment.PRESERVE_COMMENTS:
             self.orig_content = self.item.comment
 
-    def tofortran(self, isfix=None):
+    def tofortran(self, isfix=None, inline=False):
         if self.is_blank:
             return ''
         
@@ -2490,18 +2490,19 @@ class Comment(Statement):
             return self.orig_content
         
         if self.inline:
-            tab = self.get_indent_tab(isfix=isfix) + '!'
+            if inline:
+                tab = '!'
+            else:
+                tab = self.get_indent_tab(isfix=isfix) + '!'
             tab = tab + self.content
             return tab
             
         if isfix or not self.inline:
-            tab = 'C'
-            if not self.is_cont:
-                tab = tab + self.get_indent_tab(isfix=isfix)[1:]
+            tab = 'C' + self.get_indent_tab(isfix=isfix)[1:]
         else:
             tab = self.get_indent_tab(isfix=isfix) + '!'
 
-        tab = tab + self.content
+        tab = tab + ' ' + self.content
         return tab
 
     def analyze(self):

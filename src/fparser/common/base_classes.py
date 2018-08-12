@@ -706,6 +706,12 @@ class Statement(object, with_metaclass(classes)):
         lines = []
         for line in self.tofortran(isfix=True).split('\n'):
             if len(line) > max_len and line[0] == ' ':
+                if '!' in line:
+                    index = line.index('!')
+                    comm = line[index:]
+                    line = line[:index].rstrip()
+                    emptt = len(line) - len(line.lstrip()) 
+                    lines.append(' '*emptt + comm +'\n')
                 self.fix120_split(max_len, line, lines, [',', None, "+", "-","*","/",".EQ.", ".AND.", ".OR."])
             else:
                 lines.append(line+'\n')
@@ -841,7 +847,7 @@ class BeginStatement(Statement):
         for c in self.content:
             line = c.tofortran(isfix=isfix)
             if hasattr(c, 'inline_comment') and c.inline_comment != None:
-                line = line + " " + c.inline_comment.tofortran()
+                line = line + " " + c.inline_comment.tofortran(inline=True)
             lines.append(line)
         return '\n'.join(lines)
 

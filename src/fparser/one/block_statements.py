@@ -1179,6 +1179,7 @@ class Do(BeginStatement):
         self.endlabel = label
         self.construct_name = item.name
         self.loopcontrol = m.group('loopcontrol').strip()
+        self.parent_label = False
         return BeginStatement.process_item(self)
 
     def process_subitem(self, item):
@@ -1190,7 +1191,9 @@ class Do(BeginStatement):
                 if isinstance(self.parent,
                               Do) and label == self.parent.endlabel:
                     # the same item label may be used for different block ends
-                    self.put_item(item)
+                    self.parent.put_item(item)
+                    self.parent_label = True
+                    return True
         return BeginStatement.process_subitem(self, item) or r
 
     def get_classes(self):

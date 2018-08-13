@@ -705,7 +705,7 @@ class Statement(object, with_metaclass(classes)):
     def asfix120(self, max_len = 120):
         lines = []
         for line in self.tofortran(isfix=True).split('\n'):
-            if len(line) > max_len and line[0] == ' ':
+            if len(line) > max_len:
                 if '!' in line:
                     index = line.index('!')
                     comm = line[index:]

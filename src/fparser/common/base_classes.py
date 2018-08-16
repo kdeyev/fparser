@@ -644,6 +644,8 @@ class Statement(object, with_metaclass(classes)):
             tab = ''
         p = self.parent
         while isinstance(p, Statement):
+            if hasattr(p, 'blocktype') and p.blocktype == 'beginsource':
+                break
             tab += ' '*4
             p = p.parent
         if deindent:
@@ -676,7 +678,7 @@ class Statement(object, with_metaclass(classes)):
                 continue # next separator
             cont = False
             for t in tokens:
-                if len(t) >= max_len -2:
+                if len(t) >= max_len -2-align_pos:
                     cont = True
                     break
 
@@ -706,13 +708,21 @@ class Statement(object, with_metaclass(classes)):
         lines = []
         for line in self.tofortran(isfix=True).split('\n'):
             if len(line) > max_len:
+                # is comment
+                if len(line)>0 and line[0].isalpha():
+                    lines.append(line+'\n')
+                    continue
+
                 if '!' in line:
                     index = line.index('!')
                     comm = line[index:]
                     line = line[:index].rstrip()
-                    emptt = len(line) - len(line.lstrip()) 
+                    emptt = len(line) - len(line.lstrip()) + 1
                     lines.append(' '*emptt + comm +'\n')
-                self.fix120_split(max_len, line, lines, [',', None, "+", "-","*","/",".EQ.", ".AND.", ".OR."])
+                if len(line) > max_len:
+                    self.fix120_split(max_len, line, lines, [',', None, "+", "-","*","/",".EQ.", ".AND.", ".OR."])
+                else:
+                    lines.append(line+'\n')
             else:
                 lines.append(line+'\n')
         return ''.join(lines)

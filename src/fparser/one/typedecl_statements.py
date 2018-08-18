@@ -224,7 +224,11 @@ class TypeDeclarationStatement(Statement):
                and self.parent.name in self.entity_decls:
             assert self.parent.typedecl is None,repr(self.parent.typedecl)
             self.parent.typedecl = self
-            self.ignore = True
+            self.ignore = False
+            if (len(self.entity_decls)>1):
+                self.entity_decls.remove(self.parent.name)
+            else:
+                self.ignore = True
         if isinstance(self, Type):
             self.name = self.selector[1].lower()
             assert is_name(self.name),repr(self.name)

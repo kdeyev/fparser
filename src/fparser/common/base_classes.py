@@ -646,6 +646,11 @@ class Statement(object, with_metaclass(classes)):
         while isinstance(p, Statement):
             if hasattr(p, 'blocktype') and p.blocktype == 'beginsource':
                 break
+            
+            # do not indent cone in subroutines
+            if hasattr(p, 'blocktype') and p.blocktype == 'subroutine' and not (isinstance(self,EndStatement) and hasattr(self, 'blocktype') and self.blocktype == 'subroutine'):
+                break
+
             tab += ' '*4
             p = p.parent
         if deindent:
@@ -847,19 +852,59 @@ class BeginStatement(Statement):
         construct_name = construct_name + ': ' if construct_name else ''
         self_str = self.tostr()
         lines = []
+        inline_comments = []
         if self_str != None:
             line = self.get_indent_tab(isfix=isfix) + construct_name + self.tostr()
-
-            if hasattr(self, 'inline_comment') and self.inline_comment != None:
-                line = line + " " + self.inline_comment.tofortran() 
-                self.inline_comment = None
             lines.append(line)
+
+            inline_comment = ""
+            if hasattr(self, 'inline_comment') and self.inline_comment != None:
+                inline_comment = self.inline_comment.tofortran() 
+                self.inline_comment = None
+            inline_comments.append(inline_comment)
+
         for c in self.content:
             line = c.tofortran(isfix=isfix)
-            if hasattr(c, 'inline_comment') and c.inline_comment != None:
-                line = line + " " + c.inline_comment.tofortran(inline=True)
             lines.append(line)
-        return '\n'.join(lines)
+            
+            inline_comment = ""
+            if hasattr(c, 'inline_comment') and c.inline_comment != None:
+                inline_comment = c.inline_comment.tofortran(inline=True)
+            inline_comments.append(inline_comment)
+
+        concatenated = []
+        #for i in range(len(lines)):
+        i = 0
+        while i < len(lines):
+            # find trailing inline comments
+            if inline_comments[i] != "":
+                end = i
+                max_len = len(lines[i])
+
+                # find end of the trailing sequence and defile max line len
+                for j in range(i, len(lines)):
+                    if inline_comments[j] == "":
+                        break
+                    
+                    diff = abs(max_len - len(lines[j]))
+                    # have a limit to align len
+                    if diff > 30:
+                        break
+
+                    max_len = max(max_len,len(lines[j]))
+                    end = j
+                
+                # do alignment to max len
+                for j in range(i, end+1):
+                    align = max_len - len(lines[j]) + 1
+                    concatenated.append(lines[j] + ' '*align + inline_comments[j])
+
+                i = end + 1
+            else:
+                concatenated.append(lines[i])
+                i = i + 1
+                
+        return '\n'.join(concatenated)
 
     def torepr(self, depth=-1, incrtab=''):
         tab = incrtab + self.get_indent_tab()

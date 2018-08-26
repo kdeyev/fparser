@@ -670,69 +670,6 @@ class Statement(object, with_metaclass(classes)):
     def __str__(self):
         return self.tofortran()
 
-    def fix120_split(self, max_len, line, lines, separs):
-        align_pos = len(line) - len(line.lstrip())
-
-        for separ in separs:
-            lines_local = []
-            tokens = line.split(separ)
-            if separ == None:
-                separ = ' '
-                    
-            if (len(tokens) <= 1):
-                continue # next separator
-            cont = False
-            for t in tokens:
-                if len(t) >= max_len -2-align_pos:
-                    cont = True
-                    break
-
-            if cont:
-                continue
-
-            line_local = tokens[0].lstrip()
-            line_local = " " * align_pos + line_local
-
-            for t in tokens[1:]:
-                new_l = line_local + separ + t
-                if len(new_l) > max_len-1:
-                    lines_local.append(line_local + separ + "\n")
-                    line_local = "     *" + " " * (align_pos-6) + t
-                else:
-                    line_local = new_l
-            lines_local.append(line_local + "\n")
-
-            for line_local in lines_local:
-                lines.append(line_local)
-            return
-
-        print "Very long line", line
-        assert (False)
-
-    def asfix120(self, max_len = 120):
-        lines = []
-        for line in self.tofortran(isfix=True).split('\n'):
-            if len(line) > max_len:
-                # is comment
-                if len(line)>0 and line[0].isalpha():
-                    lines.append(line+'\n')
-                    continue
-
-                if '!' in line:
-                    index = line.index('!')
-                    comm = line[index:]
-                    line = line[:index].rstrip()
-                    emptt = len(line) - len(line.lstrip()) + 1
-                    lines.append(' '*emptt + comm +'\n')
-                if len(line) > max_len:
-                    self.fix120_split(max_len, line, lines, [',', None, "+", "-","*","/",".EQ.", ".AND.", ".OR."])
-                else:
-                    lines.append(line+'\n')
-            else:
-                lines.append(line+'\n')
-        return ''.join(lines)
-
-
     def asfix(self):
         lines = []
         for line in self.tofortran(isfix=True).split('\n'):
